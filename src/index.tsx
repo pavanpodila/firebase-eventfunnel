@@ -1,10 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Button from '@material-ui/core';
+
+import 'typeface-roboto';
+import Button from '@material-ui/core/Button';
 
 class App extends React.Component {
   render() {
-    return <Button />;
+    return <Button variant={'contained'}>Hello</Button>;
   }
 }
 
