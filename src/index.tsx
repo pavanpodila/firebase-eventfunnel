@@ -3,33 +3,95 @@ import ReactDOM from 'react-dom';
 
 import 'typeface-roboto';
 import './firebase';
-import { FirestoreCollection } from './mobx-firestore';
-import { Observer } from 'mobx-react';
-import { List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
-import StarIcon from '@material-ui/icons/Star';
-import { Authentication } from './auth';
+import { InterestStore } from './stores';
+import { observer, Observer } from 'mobx-react';
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  TextField,
+} from '@material-ui/core';
+import StarBorderIcon from '@material-ui/icons/StarBorder';
+import AddIcon from '@material-ui/icons/Add';
 import { AuthView } from './auth-view';
 
-interface Interest {
-  id: string;
-  title: string;
+const store = new InterestStore();
+
+interface AddCategoryFormProps {
+  store: InterestStore;
 }
-const interests = new FirestoreCollection<Interest>('/interests');
-const auth = new Authentication();
+
+@observer
+class AddCategoryForm extends React.Component<AddCategoryFormProps> {
+  render() {
+    const {
+      store,
+      store: { editingError },
+    } = this.props;
+
+    return (
+      <Fragment>
+        <TextField
+          value={store.editingInterest}
+          onChange={event => store.setInterest(event.target.value)}
+          error={editingError !== undefined}
+          helperText={editingError}
+          label={'Category'}
+          autoFocus={true}
+        />
+      </Fragment>
+    );
+  }
+}
 
 class App extends React.Component {
   render() {
     return (
       <Fragment>
-        <AuthView auth={auth} />
+        <AuthView auth={store.auth} />
+        <Button color={'primary'} variant={'contained'} onClick={store.openForm}>
+          <AddIcon />
+          Add Category
+        </Button>
+
+        <Observer>
+          {() => (
+            <Dialog open={store.isFormVisible} onEscapeKeyDown={store.closeForm} onBackdropClick={store.closeForm}>
+              <DialogTitle>Add a new Category</DialogTitle>
+              <DialogContent>
+                <AddCategoryForm store={store} />
+              </DialogContent>
+
+              <DialogActions>
+                {store.isAdding ? <CircularProgress style={{ height: 16, width: 16 }} /> : null}
+                <Button
+                  color={'primary'}
+                  variant={'contained'}
+                  onClick={store.saveInterest}
+                  disabled={store.editingError !== undefined || store.isAdding}
+                >
+                  Save
+                </Button>
+              </DialogActions>
+            </Dialog>
+          )}
+        </Observer>
+
         <List>
           <Observer>
             {() => {
-              return interests.items.map(x => (
+              return store.interests.map(x => (
                 <ListItem key={x.id} button={true}>
                   <ListItemText secondary={x.id} primary={x.title} />
                   <ListItemIcon>
-                    <StarIcon />
+                    <StarBorderIcon />
                   </ListItemIcon>
                 </ListItem>
               ));
