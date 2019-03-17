@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react';
 import React from 'react';
 import { Avatar, Button, Chip, CircularProgress, Grid, Typography } from '@material-ui/core';
-import { Authentication } from './auth';
+import { Authentication } from './model/auth';
 
 interface Props {
   auth: Authentication;
@@ -18,7 +18,7 @@ export class AuthView extends React.Component<Props> {
     if (isReady) {
       if (user) {
         return (
-          <Grid container={true}>
+          <Grid container={true} justify={'flex-end'}>
             <Grid item={true}>
               <Chip avatar={<Avatar src={user.photoURL ? user.photoURL : undefined} />} label={user.displayName} />
               <Typography variant={'body1'}>{user.uid}</Typography>
@@ -34,14 +34,18 @@ export class AuthView extends React.Component<Props> {
       }
 
       return (
-        <div>
+        <Grid container={true} justify={'flex-end'}>
           <Button variant={'contained'} onClick={auth.loginWithGoogle}>
             Login with Google
           </Button>
-        </div>
+        </Grid>
       );
     }
 
-    return <CircularProgress />;
+    return (
+      <Grid container={true} justify={'flex-end'}>
+        <CircularProgress />
+      </Grid>
+    );
   }
 }
