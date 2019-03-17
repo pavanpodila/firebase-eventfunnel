@@ -4,10 +4,16 @@ import { action, computed, IObservableArray, observable, reaction, runInAction }
 import CollectionReference = firebase.firestore.CollectionReference;
 import { Authentication } from './auth';
 
-interface Interest {
+class Interest {
   id: string;
   title: string;
-  imageUrl: string;
+  imageUrl?: string;
+
+  constructor(id: string, title: string, imageUrl?: string) {
+    this.id = id;
+    this.title = title;
+    this.imageUrl = imageUrl;
+  }
 }
 
 export class InterestCollection {
@@ -38,8 +44,56 @@ export class InterestCollection {
     });
   }
 
-  async addNew(interest: string) {
-    return this.ref.add({ title: interest });
+  async addNew(interest: string, file?: File) {
+    const result = await this.ref.add({ title: interest });
+
+    if (file) {
+      const fileUrl = await this.uploadImage(result.id, file);
+      if (fileUrl) {
+        await this.ref.doc(result.id).update({ imageUrl: fileUrl });
+      }
+    }
+  }
+
+  async update(interestId: string, title: string, file?: File) {
+    const docRef = this.ref.doc(interestId);
+    const doc = await docRef.get();
+
+    const currentImageUrl = (doc.data() as Interest).imageUrl;
+    if (currentImageUrl) {
+      await app
+        .storage()
+        .ref(doc.id)
+        .delete();
+
+      const fileUrl = await this.uploadImage(doc.id, file);
+      if (fileUrl) {
+        await this.ref.doc(interestId).update({ imageUrl: fileUrl });
+      }
+
+      return docRef.update({
+        title,
+      });
+    } else {
+      const fileUrl = await this.uploadImage(doc.id, file);
+      if (fileUrl) {
+        return this.ref.doc(interestId).update({ title, imageUrl: fileUrl });
+      }
+
+      return docRef.update({
+        title,
+      });
+    }
+  }
+
+  private async uploadImage(docId: string, file?: File) {
+    if (file) {
+      const fileRef = app.storage().ref(docId);
+      await fileRef.put(file);
+      return fileRef.getDownloadURL();
+    }
+
+    return null;
   }
 }
 
@@ -59,9 +113,12 @@ export class InterestFormStore {
   @observable
   inProgress = false;
 
+  @observable
+  imageUrl?: string;
+
   @computed
   get fileUrl() {
-    return this.file ? URL.createObjectURL(this.file) : undefined;
+    return this.file ? URL.createObjectURL(this.file) : this.imageUrl;
   }
 
   constructor(interests: IObservableArray<Interest>) {
@@ -76,8 +133,14 @@ export class InterestFormStore {
   }
 
   @action.bound
-  open() {
-    this.title = '';
+  open(title: string = '', imageUrl?: string) {
+    this.title = title || '';
+    this.imageUrl = imageUrl;
+    this.file = undefined;
+
+    this.inProgress = false;
+    this.error = undefined;
+
     this.isVisible = true;
   }
 
@@ -104,19 +167,45 @@ export class InterestStore {
   private interestCollection = new InterestCollection('/interests');
 
   form = new InterestFormStore(this.interests);
+  editForm = new InterestFormStore(this.interests);
+
+  @observable
+  editingInterest?: Interest;
 
   get interests() {
     return this.interestCollection.items;
   }
 
-  @action
-  saveInterest = async () => {
+  @action.bound
+  async addInterest() {
     try {
       this.form.inProgress = true;
-      await this.interestCollection.addNew(this.form.title);
+      await this.interestCollection.addNew(this.form.title, this.form.file);
     } finally {
       runInAction(() => (this.form.inProgress = false));
     }
     this.form.close();
-  };
+  }
+
+  @action.bound
+  async saveInterest() {
+    const interest = this.editingInterest!;
+    try {
+      this.editForm.inProgress = true;
+      await this.interestCollection.update(interest.id, this.editForm.title, this.editForm.file);
+    } finally {
+      runInAction(() => {
+        this.editForm.inProgress = false;
+        this.editForm.close();
+        this.editingInterest = undefined;
+      });
+    }
+  }
+
+  @action.bound
+  openInterestEditor(interest: Interest) {
+    this.editingInterest = interest;
+
+    this.editForm.open(interest.title, interest.imageUrl);
+  }
 }

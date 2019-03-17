@@ -23,7 +23,7 @@ class App extends React.Component {
           Add Category
         </Button>
 
-        <CategoryDialog form={store.form} onSave={store.saveInterest} />
+        <CategoryDialog form={store.form} onSave={store.addInterest} title={'Add new Category'} />
         <InterestList store={store} />
       </Fragment>
     );

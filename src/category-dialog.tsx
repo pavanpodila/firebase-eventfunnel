@@ -7,16 +7,17 @@ import { InterestFormStore } from './model/stores';
 interface CategoryDialogProps {
   form: InterestFormStore;
   onSave: () => void;
+  title: string;
 }
 
 @observer
 export class CategoryDialog extends React.Component<CategoryDialogProps> {
   render() {
-    const { onSave, form } = this.props;
+    const { onSave, form, title } = this.props;
 
     return (
       <Dialog open={form.isVisible} onEscapeKeyDown={form.close} onBackdropClick={form.close}>
-        <DialogTitle>Add a new Category</DialogTitle>
+        <DialogTitle>{title}</DialogTitle>
         <DialogContent>
           <Observer>
             {() => (
