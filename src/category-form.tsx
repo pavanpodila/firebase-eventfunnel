@@ -4,14 +4,14 @@ import { Button, Grid, TextField } from '@material-ui/core';
 interface CategoryFormProps {
   value: string;
   onValueChanged: (title: string) => void;
-  titleError?: string;
+  error?: string;
   imageUrl?: string;
   onImageChanged?: (file?: File) => void;
 }
 
 export class CategoryForm extends React.Component<CategoryFormProps> {
   render() {
-    const { value, titleError, onValueChanged, imageUrl } = this.props;
+    const { value, error, onValueChanged, imageUrl } = this.props;
 
     return (
       <Grid container={true} style={{ width: 400 }} spacing={8}>
@@ -19,8 +19,8 @@ export class CategoryForm extends React.Component<CategoryFormProps> {
           <TextField
             value={value}
             onChange={event => onValueChanged(event.target.value)}
-            error={titleError !== undefined}
-            helperText={titleError}
+            error={error !== undefined}
+            helperText={error}
             label={'Category'}
             autoFocus={true}
           />

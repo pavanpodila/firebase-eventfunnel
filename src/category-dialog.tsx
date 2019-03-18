@@ -23,6 +23,7 @@ export class CategoryDialog extends React.Component<CategoryDialogProps> {
             {() => (
               <CategoryForm
                 value={form.title}
+                error={form.error}
                 onValueChanged={form.setTitle}
                 imageUrl={form.fileUrl}
                 onImageChanged={form.setFile}

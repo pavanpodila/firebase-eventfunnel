@@ -1,8 +1,8 @@
 import { app } from './firebase';
-import { action, computed, IObservableArray, observable, reaction, runInAction } from 'mobx';
+import { action, computed, IObservableArray, observable, runInAction } from 'mobx';
+import { Authentication } from './auth';
 // @ts-ignore
 import CollectionReference = firebase.firestore.CollectionReference;
-import { Authentication } from './auth';
 
 class Interest {
   id: string;
@@ -21,9 +21,12 @@ export class InterestCollection {
 
   items: IObservableArray<Interest> = observable.array([]);
 
+  @observable isLoading = false;
+
   constructor(path: string) {
     this.ref = app.firestore().collection(path);
 
+    this.isLoading = true;
     this.ref.onSnapshot(snapshot => {
       snapshot.docChanges().forEach(change => {
         switch (change.type) {
@@ -41,6 +44,8 @@ export class InterestCollection {
             Object.assign(this.items[index], change.doc.data());
         }
       });
+
+      this.isLoading = false;
     });
   }
 
@@ -121,17 +126,6 @@ export class InterestFormStore {
     return this.file ? URL.createObjectURL(this.file) : this.imageUrl;
   }
 
-  constructor(interests: IObservableArray<Interest>) {
-    reaction(
-      () => this.title,
-      value => {
-        const categories = interests.map(x => x.title.toLowerCase());
-        const exists = categories.includes(value);
-        runInAction(() => (this.error = exists ? 'Category already exists' : undefined));
-      },
-    );
-  }
-
   @action.bound
   open(title: string = '', imageUrl?: string) {
     this.title = title || '';
@@ -166,11 +160,15 @@ export class InterestStore {
   auth = new Authentication();
   private interestCollection = new InterestCollection('/interests');
 
-  form = new InterestFormStore(this.interests);
-  editForm = new InterestFormStore(this.interests);
+  form = new InterestFormStore();
+  editForm = new InterestFormStore();
 
   @observable
   editingInterest?: Interest;
+
+  @computed get isLoading() {
+    return this.interestCollection.isLoading;
+  }
 
   get interests() {
     return this.interestCollection.items;
